@@ -31,8 +31,6 @@ export class AuthService {
   }
 
   signToken(data) {
-    console.log(data);
-
     return this.jwtService.sign(data);
   }
 }
