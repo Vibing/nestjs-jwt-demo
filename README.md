@@ -217,7 +217,17 @@ payload: { id: 2, username: 'admin', iat: 1619766245, exp: 1619766305 }
 所以我要使用全局的 AuthGuard 来完成这个功能，但也有些接口不需要 jwt 验证(比如 login、register)，所以我们不直接使用全局的 AuthGuard，而是创建一个新的守卫：
 
 ```typescript
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';import { Observable } from 'rxjs';@Injectable()export class JwtAuthGuard implements CanActivate {  canActivate(    context: ExecutionContext,  ): boolean | Promise<boolean> | Observable<boolean> {    return true;  }}
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Observable } from 'rxjs';
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    return true;
+  }
+}
 ```
 
 新建的守卫需要实现 CanActivate，这就遇到一个麻烦，怎么把 AuthGuard 拿进来使用呢？
@@ -225,7 +235,26 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';impor
 仔细一想， AuthGuard 也是守卫，它内部已经实现了 CanActivate，现在我要用 AuthGuard 的功能，只需要让 JwtAuthGuard 来继承 AuthGuard() 就好了
 
 ```typescript
-import { ExecutionContext, Injectable } from '@nestjs/common';import { AuthGuard } from '@nestjs/passport';import { Observable } from 'rxjs';@Injectable()export class JwtAuthGuard extends AuthGuard('jwt') {  canActivate(    context: ExecutionContext,  ): boolean | Promise<boolean> | Observable<boolean> {    const request = context.switchToHttp().getRequest();    const whitelist = ['/login'];    if (whitelist.find((url) => url === request.url)) {      return true;    }    return super.canActivate(context);  }}
+import { ExecutionContext, Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Observable } from 'rxjs';
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {
+  canActivate(
+    context: ExecutionContext,
+  ): boolean | Promise<boolean> | Observable<boolean> {
+    const request = context.switchToHttp().getRequest();
+
+    const whitelist = ['/login'];
+
+    if (whitelist.find((url) => url === request.url)) {
+      return true;
+    }
+
+    return super.canActivate(context);
+  }
+}
 ```
 
 代码中通过 request 拿到当前请求的 url，通过与白名单(whitelist)对比达到排除不需要 jwt 认证的接口，非白名单内的接口仍需要通过 super.canActivate(context)。 ps: 这里白名单的处理不全面，建议配合 [ path-to-regexp](https://github.com/pillarjs/path-to-regexp) 来使用
@@ -233,7 +262,12 @@ import { ExecutionContext, Injectable } from '@nestjs/common';import { AuthGuard
 全局使用 JwtAuthGuard 有两种方式，一种在 app.module.ts 中通过 providers 注册全局提供者：
 
 ```json
-providers: [    {      provide: APP_GUARD,      useClass: JwtAuthGuard,    }]
+providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    }
+]
 ```
 
 还有一种是在 main.js 中添加全局使用：
