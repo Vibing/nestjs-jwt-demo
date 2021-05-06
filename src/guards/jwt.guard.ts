@@ -10,7 +10,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     const request = context.switchToHttp().getRequest();
 
     const whitelist = ['/login'];
-    console.log('aaaa');
 
     if (whitelist.find((url) => url === request.url)) {
       return true;
